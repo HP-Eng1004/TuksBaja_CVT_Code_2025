@@ -452,7 +452,9 @@ def cvt_simulation_briggs(q=4, w=2, e=7, r=1, t=1, goal= 3400, shim=0, plot=Fals
 
 @app.cell
 def _(ErpmMax, Govspeed, Idle, T, Vsmax, Vsmin, go):
-    list = np.array([[7,3,8,0,0,0],[7,3,9,0,0,0],[7,3,8,2,0,0],[7,3,8,0,1,0],[7,3,9,0,2,0],])
+        #list = np.array([[7,3,8,0,0,0],[7,3,9,0,0,0],[7,3,8,2,0,0],[7,3,8,0,1,0],[7,3,9,0,2,0],]) # List for secondary component influence
+
+    list = np.array([[7,3,8,0,0,0],[5, 2, 7, 1, 1,10],[7, 1, 6, 0, 0, 5]]) # List for model validation
     goal = 3600
 
     _fig = go.Figure()
