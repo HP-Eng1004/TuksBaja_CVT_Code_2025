@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.14.16"
+__generated_with = "0.16.3"
 app = marimo.App(width="medium")
 
 with app.setup:
@@ -22,7 +22,7 @@ with app.setup:
 def _():
     mo.md(
         r"""
-    ## Investigate a setup (For Briggs & Straton Engine)
+    # Investigate a setup (For Briggs & Straton Engine)
     #### Use the shorthand developed by Mills (2019)
     """
     )
@@ -35,7 +35,6 @@ def _(T, es, qs, rs, ss, ts, ws):
         mo.hstack([T,T.value,"%",f"({round(T.value*0.17,1)} [Nm]"], justify="start"),
         mo.hstack([qs,qs.value,";",ws,ws.value,";",ss,ss.value,"[mm]"], justify="start"),
         mo.hstack([es,es.value,";",rs,rs.value,";",ts,ts.value], justify="start")])
-
     return
 
 
@@ -57,6 +56,107 @@ def _(T, e, q, r, shim, t, w):
     result = cvt_simulation_briggs(q, w, e, r, t, shim =shim, plot=True, no_T2 = False, goal = 3600,TorqPerc=T.value)
     print(result['veh_speed'])
     print(result['engine_rpms'])
+    return
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""# Compare Setups""")
+    return
+
+
+@app.cell
+def _():
+    #list = np.array([[7,3,8,0,0,0],[7,3,9,0,0,0],[7,3,8,2,0,0],[7,3,8,0,1,0],[7,3,9,0,2,0],]) # List for secondary component influence
+
+    list = np.array([[7,3,8,0,0,0], [5, 2, 7, 1, 1,10], [7, 1, 6, 0, 0, 5], [6, 1, 9, 0, 0, 5],[2, 2, 9, 0, 0, 0],[8,0,9,0,1,10]]) # List for model validation
+    goal = 3600
+    return goal, list
+
+
+@app.cell
+def _(ErpmMax, Govspeed, Idle, T, Vsmax, Vsmin, go, goal, list):
+    _fig = go.Figure()
+        # Plotting Lines to compare against
+    _fig.add_trace(go.Scatter(
+                x=[Vsmin,0,Vsmax], y=[ErpmMax, 0, ErpmMax],
+                mode='lines', line=dict(dash='dot', color='grey'),
+                name='Low & High Ratios',
+            ))
+    _fig.add_trace(go.Scatter(
+        x=[0, Vsmax], y=[goal,goal],
+        mode='lines', line=dict(dash='dash', color='green'),
+        name=f'Ideal shift ({goal}rpm)',
+            ))
+    _fig.add_trace(go.Scatter(
+        x=[0, Vsmax], y=Govspeed,
+        mode='lines', line=dict(dash='dash', color='red'),
+        name='Governor',
+            ))
+    _fig.add_trace(go.Scatter(
+        x=[0, Vsmax], y=Idle,
+        mode='lines', line=dict(dash='dash', color='grey'),
+        name='Idle',
+            ))
+
+    for setup in list:
+
+        _q=setup[0]
+        _w=setup[1]
+        _e=setup[2]
+        _r=setup[3]
+        _t=setup[4]
+        _shim=setup[5]
+        _result = cvt_simulation_briggs(_q, _w, _e, _r, _t, shim =_shim, plot=False, no_T2 = False, goal = 3600,TorqPerc=T.value) 
+
+        # Label for the last trace
+        _lame = str([_q, _w, _e, _r, _t]) + '-'+ str(_shim)
+
+        _fig.add_trace(go.Scatter(
+                x=_result["veh_speed"], y=_result["engine_rpms"],
+                mode='lines+markers',
+                name=_lame,
+                hoverinfo='x+y+name'
+        ))
+
+
+    _fig.update_layout(
+        template = "plotly_white",
+        title=dict(text="Briggs Model (Const. Torque)", x=0.5, xanchor='center'),
+        xaxis_title="Vehicle Speed in km/h",
+        yaxis_title="Engine Speed in RPM",
+        yaxis=dict(range=[1300, 4000]),
+        showlegend=True,
+        legend=dict(
+            yanchor="bottom",
+            y=-0.4,
+            xanchor="center",
+            x=0.5,
+            orientation="h",
+            traceorder="normal",
+            itemsizing="constant",
+            font=dict(size=10)
+        ),
+        # margin=dict(b=150),  # Adjust bottom margin for legend
+        hovermode='closest',
+        width=1000,
+        height=600
+    )
+    _fig.update_xaxes(showgrid=True)
+    _fig.update_yaxes(showgrid=True)
+
+    _fig
+    return
+
+
+@app.cell
+def _():
+    mo.md(
+        r"""
+    ##Function Definitions 
+    Briggs Math Model
+    """
+    )
     return
 
 
@@ -97,7 +197,7 @@ def cvt_simulation_briggs(q=4, w=2, e=7, r=1, t=1, goal= 3400, shim=0, plot=Fals
     TRL = GR * CVTL  # Torque Ratio Low
     TRH = GR * CVTH  # Torque Ratio High
     ErpmMax = 3700  # Max engine RPM
-    ErpmMin = 1800  # Min engine RPM
+    ErpmMin = 1650  # Min engine RPM
     Wdia = 23 * 0.0254  # wheel diameter in m
     Wcirc = 1.74  # Wdia * np.pi ### needs calibration
     Vsmax = ErpmMax / TRH / 60 * Wcirc * 3.6  # Max vehicle speed in km/h
@@ -448,86 +548,6 @@ def cvt_simulation_briggs(q=4, w=2, e=7, r=1, t=1, goal= 3400, shim=0, plot=Fals
             'ys': ys,        
         # Add other lists if needed, e.g., 'F1_plt': F1_plt, etc.
     }
-
-
-@app.cell
-def _(ErpmMax, Govspeed, Idle, T, Vsmax, Vsmin, go):
-        #list = np.array([[7,3,8,0,0,0],[7,3,9,0,0,0],[7,3,8,2,0,0],[7,3,8,0,1,0],[7,3,9,0,2,0],]) # List for secondary component influence
-
-    list = np.array([[7,3,8,0,0,0],[5, 2, 7, 1, 1,10],[7, 1, 6, 0, 0, 5]]) # List for model validation
-    goal = 3600
-
-    _fig = go.Figure()
-    # Plotting Lines to compare against
-    _fig.add_trace(go.Scatter(
-        x=[Vsmin,0,Vsmax], y=[ErpmMax, 0, ErpmMax],
-        mode='lines', line=dict(dash='dot', color='grey'),
-        name='Low & High Ratios',
-    ))
-    _fig.add_trace(go.Scatter(
-        x=[0, Vsmax], y=[goal,goal],
-        mode='lines', line=dict(dash='dash', color='green'),
-        name=f'Ideal shift ({goal}rpm)',
-    ))
-    _fig.add_trace(go.Scatter(
-        x=[0, Vsmax], y=Govspeed,
-        mode='lines', line=dict(dash='dash', color='red'),
-        name='Governor',
-    ))
-    _fig.add_trace(go.Scatter(
-        x=[0, Vsmax], y=Idle,
-        mode='lines', line=dict(dash='dash', color='grey'),
-        name='Idle',
-    ))
-
-    for setup in list:
-
-        _q=setup[0]
-        _w=setup[1]
-        _e=setup[2]
-        _r=setup[3]
-        _t=setup[4]
-        _shim=setup[5]
-        _result = cvt_simulation_briggs(_q, _w, _e, _r, _t, shim =_shim, plot=False, no_T2 = False, goal = 3600,TorqPerc=T.value) 
-
-
-        # Label for the last trace
-        _lame = str([_q, _w, _e, _r, _t]) + '-'+ str(_shim)
-
-        _fig.add_trace(go.Scatter(
-                x=_result["veh_speed"], y=_result["engine_rpms"],
-                mode='lines+markers',
-                name=_lame,
-                hoverinfo='x+y+name'
-        ))
-
-    _fig.update_layout(
-                template = "plotly_white",
-                title=dict(text="Briggs Model (Const. Torque)", x=0.5, xanchor='center'),
-                xaxis_title="Vehicle Speed in km/h",
-                yaxis_title="Engine Speed in RPM",
-                yaxis=dict(range=[1500, 4000]),
-                showlegend=True,
-                legend=dict(
-                    yanchor="bottom",
-                    y=-0.4,
-                    xanchor="center",
-                    x=0.5,
-                    orientation="h",
-                    traceorder="normal",
-                    itemsizing="constant",
-                    font=dict(size=10)
-                ),
-                # margin=dict(b=150),  # Adjust bottom margin for legend
-                hovermode='closest',
-                width=800,
-                height=600
-            )
-    _fig.update_xaxes(showgrid=True)
-    _fig.update_yaxes(showgrid=True)
-
-    _fig
-    return
 
 
 @app.cell(hide_code=True)

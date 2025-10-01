@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.14.16"
+__generated_with = "0.16.3"
 app = marimo.App(width="medium")
 
 with app.setup:
@@ -22,16 +22,11 @@ def _():
     return (mo,)
 
 
-@app.cell
-def _():
-    return
-
-
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(
         r"""
-    ## CVT Model Simulation
+    # CVT Model Simulation
     ### Interactive Simulation with Sliders
     #### JL (Hannes) Pretorius - (2025)
     - Simulates CVT performance for given parameters
@@ -692,6 +687,7 @@ def plot_simulation(result, q, w, e, r, t,shim, goal, Vsmin, Vsmax, ErpmMax, Erp
         name="Overrun",
         hoverinfo='x+y+name'
     ))
+
 
     fig.update_layout(
         template="plotly_white",
