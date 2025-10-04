@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.14.16"
+__generated_with = "0.16.3"
 app = marimo.App(width="medium")
 
 
@@ -126,8 +126,8 @@ def _():
     Channel_Info = [
         # ["Name", (a,b), ["X-Label", "Y-Label"]]
         ["NaN", (1,0), ["X-Label", "Y-Label"]], #0
-        ["Primary", (508.23,84.047), ["X-Label", "RPM"]], #1
-        ["Secondary", (508.23,84.047), ["X-Label", "RPM"]], #2
+        ["Primary", (m_prime,0), ["X-Label", "RPM"]], #1
+        ["Secondary", (m_wheel,0), ["X-Label", "RPM"]], #2
         ["Secondary Torque", (56.787,10), ["X-Label3", "Torque [Nm]"]], #3
         ["Laser Distance", (41.221, 32.88), ["X-Label", "Distance [mm]"]], #4
         ["Accel Y", (19.5248, -46.3303), ["X-Label5", "Y-Label5"]], #5
@@ -509,7 +509,6 @@ def _(
               cutoff_freq=10, 
               show_unfiltered= True, 
               color = 5)
-
     return cr_diam, cutoff_freq
 
 
@@ -558,7 +557,6 @@ def _(cr_diam, cutoff_freq, diameter, go, low_pass_filter, plotly, time):
         )
     _fig.update_xaxes(showgrid=True)
     _fig.update_yaxes(showgrid=True)
-
     return
 
 
