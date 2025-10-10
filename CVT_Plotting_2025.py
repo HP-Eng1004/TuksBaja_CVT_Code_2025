@@ -38,7 +38,7 @@ def plot_torque_transfer(result, q, w, e, r, t,shim,legend_columns=2):
             x=0.5,
             orientation="h",
             traceorder="normal",
-            font=dict(size=10),
+            font=dict(size=14),
             tracegroupgap=5,  # Small gap between legend items
             # itemsizing="constant",
             itemwidth=item_width  # Set item width to control number of columns
@@ -87,7 +87,7 @@ def plot_radial_force(result, q, w, e, r, t, shim, legend_columns=2):
             x=0.5,
             orientation="h",
             traceorder="normal",
-            font=dict(size=12),
+            font=dict(size=14),
             tracegroupgap=5,  # Small gap between legend items
             # itemsizing="constant",
             itemwidth=item_width  # Set item width to control number of columns
@@ -191,7 +191,7 @@ def plot_error(result, q, w, e, r, t, shim, legend_columns=2):
             xanchor="center",
             x=0.5,
             orientation="h",
-            font=dict(size=10),
+            font=dict(size=14),
             tracegroupgap=5,
             itemwidth=item_width
         ),

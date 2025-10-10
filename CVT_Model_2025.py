@@ -706,7 +706,7 @@ def plot_simulation(result, q, w, e, r, t,shim, goal, Vsmin, Vsmax, ErpmMax, Erp
             orientation="h",
             traceorder="normal",
             itemsizing="constant",
-            font=dict(size=10)
+            font=dict(size=13)
         ),
         hovermode='closest',
     )

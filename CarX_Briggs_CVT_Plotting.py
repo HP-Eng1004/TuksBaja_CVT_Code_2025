@@ -795,6 +795,14 @@ def _(e, go, low_pass_filter, mo, np, q, r, section, shim, t, w):
             Idle = np.array([ErpmMin, ErpmMin])
             RPM = np.array([0, 3800])
 
+
+            # Add scatter traces
+            fig.add_trace(go.Scatter(**scatter_params))
+            fig.add_trace(go.Scatter(**old_shift))
+            fig.add_trace(go.Scatter(**goal_shift))
+
+
+
             fig.add_trace(go.Scatter(
                 x=[0, Vsmin*v2s], y=RPM,
                 mode='lines', line=dict(dash='dash', color='grey'),
@@ -815,10 +823,8 @@ def _(e, go, low_pass_filter, mo, np, q, r, section, shim, t, w):
                 mode='lines', line=dict(dash='dash', color='grey'),
                 name='Idle',
             ))
-            # Add scatter traces
-            fig.add_trace(go.Scatter(**scatter_params))
-            fig.add_trace(go.Scatter(**goal_shift))
-            fig.add_trace(go.Scatter(**old_shift))
+
+
 
             # Update layout
             fig.update_layout(

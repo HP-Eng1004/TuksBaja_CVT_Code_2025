@@ -69,7 +69,16 @@ def _():
 def _():
     #list = np.array([[7,3,8,0,0,0],[7,3,9,0,0,0],[7,3,8,2,0,0],[7,3,8,0,1,0],[7,3,9,0,2,0],]) # List for secondary component influence
 
-    list = np.array([[7,3,8,0,0,0], [5, 2, 7, 1, 1,10], [7, 1, 6, 0, 0, 5], [6, 1, 9, 0, 0, 5],[2, 2, 9, 0, 0, 0],[8,0,9,0,1,10]]) # List for model validation
+    list = np.array([ 
+                     #[5, 2, 7, 1, 1,10], 
+                     # [7, 1, 6, 0, 0, 5], 
+                     # [6, 1, 9, 0, 0, 5],
+                     [2, 2, 9, 0, 0, 0],
+                     [8, 0, 9, 0, 1, 10],
+                     [7, 3, 8, 0, 0, 0], #Tested
+                     [6, 2, 5, 0, 1, 10] #Tested
+
+                    ]) # List for model validation
     goal = 3600
     return goal, list
 
@@ -135,7 +144,7 @@ def _(ErpmMax, Govspeed, Idle, T, Vsmax, Vsmin, go, goal, list):
             orientation="h",
             traceorder="normal",
             itemsizing="constant",
-            font=dict(size=10)
+            font=dict(size=12)
         ),
         # margin=dict(b=150),  # Adjust bottom margin for legend
         hovermode='closest',
@@ -158,6 +167,15 @@ def _():
     """
     )
     return
+
+
+@app.function
+def engTorqBS(w):
+    import numpy as np
+    rpm = w * 30/np.pi
+    T_eng = -2*10**-6 * rpm**2 + 0.0058*rpm + 22.536
+
+    return T_eng
 
 
 @app.function
@@ -197,7 +215,7 @@ def cvt_simulation_briggs(q=4, w=2, e=7, r=1, t=1, goal= 3400, shim=0, plot=Fals
     TRL = GR * CVTL  # Torque Ratio Low
     TRH = GR * CVTH  # Torque Ratio High
     ErpmMax = 3700  # Max engine RPM
-    ErpmMin = 1650  # Min engine RPM
+    ErpmMin = 1500  # Min engine RPM
     Wdia = 23 * 0.0254  # wheel diameter in m
     Wcirc = 1.74  # Wdia * np.pi ### needs calibration
     Vsmax = ErpmMax / TRH / 60 * Wcirc * 3.6  # Max vehicle speed in km/h
@@ -212,7 +230,8 @@ def cvt_simulation_briggs(q=4, w=2, e=7, r=1, t=1, goal= 3400, shim=0, plot=Fals
     # shim = 0  # Spring shim displacement
 
     goal = goal  # Peak Power RPM
-    T1 = 17*TorqPerc/100
+    w_goal = goal* np.pi/30
+    T1 = engTorqBS(w_goal)
 
     # Part names (for reference, optional output)
     FWn = FW_names()
@@ -347,7 +366,7 @@ def cvt_simulation_briggs(q=4, w=2, e=7, r=1, t=1, goal= 3400, shim=0, plot=Fals
         Rs1 = F1 / tan(beta)
         R1 = Fc1 + Rs1
 
-        T1_new = engTorq(w1)
+        T1_new = engTorqBS(w1)
         T2_new = T1_new * cr * eff
         F2_new = (0.5 * T2_new + Fs2t) / (r_h * tan(ramp_angle)) + Fs2
 
@@ -594,7 +613,7 @@ def old_cvt_model_briggs(q=4, w=2, e=7, r=1, t=1):
 
     ## Engine RPM and Speed Definitions
     ErpmMax = 3800 # Max engine RPM
-    ErpmMin = 1800  # Min engine RPM
+    ErpmMin = 1500  # Min engine RPM
 
     ## Vehicle Speed and Wheel Diameter Definitions
     Wdia = 23*0.0254 #wheel diameter in m
@@ -776,7 +795,7 @@ def old_cvt_model_fix(q=4, w=2, e=7, r=1, t=1):
 
     ## Engine RPM and Speed Definitions
     ErpmMax = 3800 # Max engine RPM
-    ErpmMin = 1800  # Min engine RPM
+    ErpmMin = 1500  # Min engine RPM
 
     ## Vehicle Speed and Wheel Diameter Definitions
     Wdia = 23*0.0254 #wheel diameter in m
@@ -934,7 +953,7 @@ def _(e, q, r, t, w):
     TRL = GR * CVTL  # Torque Ratio Low
     TRH = GR * CVTH  # Torque Ratio High
     ErpmMax = 3700  # Max engine RPM
-    ErpmMin = 1800  # Min engine RPM
+    ErpmMin = 1650  # Min engine RPM
     Wdia = 23 * 0.0254  # wheel diameter in m
     Wcirc = 1.74  # Wdia * np.pi ### needs calibration
     Vsmax = 3800 / TRH / 60 * Wcirc * 3.6  # Max vehicle speed in km/h
