@@ -144,7 +144,7 @@ def _(ErpmMax, Govspeed, Idle, T, Vsmax, Vsmin, go, goal, list):
             orientation="h",
             traceorder="normal",
             itemsizing="constant",
-            font=dict(size=12)
+            font=dict(size=14)
         ),
         # margin=dict(b=150),  # Adjust bottom margin for legend
         hovermode='closest',
@@ -330,15 +330,17 @@ def cvt_simulation_briggs(q=4, w=2, e=7, r=1, t=1, goal= 3400, shim=0, plot=Fals
             """
             cf_dyn = 0.25 * cf
             T_takeoff = 7.6 # Rough values from WFT
-            rpm_eng = (60 / (2 * pi)) * (((T_takeoff*tan(beta) / (r1 * cf_dyn)) + feng) / (MFW * rsint))**0.5
+            w_eng = (((T_takeoff*tan(beta) / (r1 * cf_dyn)) + feng) / (MFW * rsint))**0.5
+            rpm_eng = (60 / (2 * pi)) * w_eng
             engine_rpms.append(rpm_eng)
             veh_speed.append(0)
 
             # Clutching
+            """Use the engagement rpm just solved for to guess clutching engine and evalute the engine torque at that point
             """
-            Dateer op, en sit in verslag
-            """
-            w_clu = (((T1*tan(beta) / (r1 * cf)) + feng) / ((MFW * rsint) - (m_prime *tan(beta)*phi_1*r1**2)) )**0.5
+            T1_clu = engTorq(w_eng)
+
+            w_clu = (((T1_clu * tan(beta) / (r1 * cf)) + feng) / ((MFW * rsint) - (m_prime * tan(beta) * phi_1 * r1**2)))**0.5
             rpm_clu = (60 / (2 * pi)) * w_clu
             vel_clu = rpm_clu / (cr * 11.3) / 60 * Wcirc * 3.6
             engine_rpms.append(rpm_clu)

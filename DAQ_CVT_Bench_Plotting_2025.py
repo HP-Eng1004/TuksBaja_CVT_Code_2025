@@ -96,9 +96,9 @@ def _():
     # Turk box calibration eqn
 
     ## Wheel
-    _N = 6 # Number of reflectors
-    _r = 11.2 # ratio between reflectors and where the speed is needed
-    _n = 100*100 # Turk box rpm                                               # CHECK THE TURK BOXES
+    _N = 3 # Number of reflectors
+    _r = 1 # ratio between reflectors and where the speed is needed
+    _n = 150*100 # Turk box rpm                                               # CHECK THE TURK BOXES
 
     m_wheel = _r* _n/_N /10 # gradient of the calibration line
     print("m_wheel = ",m_wheel)
@@ -106,18 +106,10 @@ def _():
     ## Primary
     _N = 3 # Number of reflectors
     _r = 1 # ratio between reflectors and where the speedin needed
-    _f = 300 # Turk box frequency in Hz
+    _n = 150*100 # Turk box frequency in Hz
 
-    m_prime = _r* 60*_f/_N /10 # gradient of the calibration line
+    m_prime = _r* _n/_N /10 # gradient of the calibration line
     print("m_prime = ",m_prime)
-
-    ## Belt
-    _N = 1 # Number of reflectors
-    _r = 1 # ratio between reflectors and where the speedin needed
-    _f = 100 # Turk box frequency in Hz                                  # CHECK THE TURK BOXES
-
-    m_belt = _r* 60*_f/_N /10 # gradient of the calibration line
-    print("m_belt = ",m_belt)
 
     '''["Accel X", (19.475, -46.626), ["X-Label", "Acceleration [m/s^2]"]], #4
         ["Accel Y", (19.5248, -46.3303), ["X-Label5", "Y-Label5"]], #5
@@ -126,8 +118,8 @@ def _():
     Channel_Info = [
         # ["Name", (a,b), ["X-Label", "Y-Label"]]
         ["NaN", (1,0), ["X-Label", "Y-Label"]], #0
-        ["Primary", (m_prime,0), ["X-Label", "RPM"]], #1
-        ["Secondary", (m_wheel,0), ["X-Label", "RPM"]], #2
+        ["Primary", (517,75), ["X-Label", "RPM"]], #1
+        ["Secondary", (517,89.5), ["X-Label", "RPM"]], #2
         ["Secondary Torque", (56.787,10), ["X-Label3", "Torque [Nm]"]], #3
         ["Laser Distance", (41.221, 32.88), ["X-Label", "Distance [mm]"]], #4
         ["Accel Y", (19.5248, -46.3303), ["X-Label5", "Y-Label5"]], #5
@@ -981,19 +973,6 @@ def _(
         YL = custom_labels.get('y', Ch_info[Ch_y][2][1]) if custom_labels else Ch_info[Ch_y][2][1]
 
         # Prepare scatter trace
-        scatter_params = dict(
-            x=x,
-            y=y,
-            mode='lines',
-            name=f"Test Data",
-            hovertemplate=
-                f"{Ch_info[Ch_x][0]} vs {Ch_info[Ch_y][0]}<br>" +
-                f"X: %{{x:.2f}}<br>" +
-                f"Y: %{{y:.2f}}<br>" +
-                f"Time: %{{customdata:.2f}}<br>" +
-                "<extra></extra>",
-            customdata=time_data  # Add time data to hover
-        )
 
         goal_no_T2 = cvt_simulation(q, w, e, r, t,no_T2=True, shim = shim_input.value)
 
@@ -1024,11 +1003,7 @@ def _(
         )
 
 
-        scatter_params.update(
-            line=dict(
-                color=plotly.colors.qualitative.Plotly[color_offset]
-            )
-        )
+
         # Plotting Lines to compare against
         ## Data for comparison lines
         Low = np.array([0, Vsmin])*v2s
@@ -1053,23 +1028,59 @@ def _(
             name='Governor',
         ))
         fig.add_trace(go.Scatter(
-            x=[0, Vsmax*v2s], y=Idle,
+            x=[0, Vsmax], y=Idle,
             mode='lines', line=dict(dash='dash', color='grey'),
             name='Idle',
+            xaxis = 'x2'
         ))
         # Add scatter trace
-        fig.add_trace(go.Scatter(**scatter_params))
+        fig.add_trace(go.Scatter(
+            x=x,
+            y=y,
+            mode='lines',
+            name=f"Test Data",
+            hovertemplate=
+                f"{Ch_info[Ch_x][0]} vs {Ch_info[Ch_y][0]}<br>" +
+                f"X: %{{x:.2f}}<br>" +
+                f"Y: %{{y:.2f}}<br>" +
+                f"Time: %{{customdata:.2f}}<br>" +
+                "<extra></extra>",
+            customdata=time_data,  # Add time data to hover
+            xaxis = 'x1',
+            line=dict(
+                color=plotly.colors.qualitative.Plotly[color_offset]
+            )
+        ))
         fig.add_trace(go.Scatter(**goal_shift))
         fig.add_trace(go.Scatter(**nT2_shift))
         fig.add_trace(go.Scatter(**old_shift))
 
-        # Update layout
+        factor = 1/v2s
         fig.update_layout(
+            xaxis=dict(
+                title='RPM',
+                range=[0, 4800],  # Set to include your data range
+                tick0=0,
+                dtick=1000,  # Major ticks at 1000 increments
+                gridcolor='lightgrey',
+                showgrid=True
+            ),
+            xaxis2=dict(
+                title='Vehicle Speed (km/h)',  # Adjust units as needed
+                overlaying='x',  # Overlays the primary x-axis
+                side='top',  # Position at the top
+                range=[0, 4800 * factor],  # Scale range based on factor
+                tick0=0,
+                dtick= 1000 * factor,  # Match increments scaled by factor
+                showgrid=False,  # Avoid clutter from secondary grid
+                tickformat=".0f"
+            ),
+
             dragmode='zoom',
             xaxis_title="Secondary Speed [RPM]",
             yaxis_title="Engine/Primary Speed [RPM]",
-            yaxis=dict(range=[1000, 4500]),
-            title=dict(text=subTitle, x=0.5, xanchor='center'),
+            yaxis=dict(range=[1000, 4200]),
+            title=dict(text=subTitle, x=0.5, y=0.95, xanchor='center'),
             showlegend=True,
             hovermode='closest',
            legend=dict(

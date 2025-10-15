@@ -394,6 +394,163 @@ def _(Channel_Info, Data, cutoff_slider, filter_button, plot_ratio):
 
 
 @app.cell
+def _(e, go, low_pass_filter, mo, np, q, r, section, shim, t, w):
+    def plot_vs(data, Ch_info, Ch_x, Ch_y, veh_speed, engine_rpms, old_veh, old_rpm, calibrated_data=False, subTitle="Custom Subtitle", 
+                    custom_labels=None, apply_low_pass=False, cutoff_freq=60.0):
+
+            GR = 11.3  # Gear Reduction Ratio
+            CVTH = 0.76  # CVT High Ratio
+            CVTL = 3.8  # CVT Low Ratio
+            TRL = GR * CVTL  # Torque Ratio Low
+            TRH = GR * CVTH  # Torque Ratio High
+            ErpmMax = 3700  # Max engine RPM
+            ErpmMin = 1800  # Min engine RPM
+            Wdia = 23 * 0.0254  # wheel diameter in m
+            Wcirc = 1.74  # Wdia * np.pi ### needs calibration
+            Vsmax = 3800 / TRH / 60 * Wcirc * 3.6  # Max vehicle speed in km/h
+            Vsmin = 3800 / TRL / 60 * Wcirc * 3.6  # Min vehicle speed in km/h
+
+            # Create Plotly figure
+            fig = go.Figure()
+
+            # Extract data
+            x = data[Ch_x].Data[section[0]:section[1]]
+            y = data[Ch_y].Data[section[0]:section[1]]
+
+            # Extract time data
+            time_data = data[Ch_x].time[section[0]:section[1]]
+
+            # Transform Data using Calibration Values
+            if calibrated_data:
+                x = apply_calibration(x, Ch_info[Ch_x][1])
+                y = apply_calibration(y, Ch_info[Ch_y][1])
+
+            # Apply Low-Pass Filter
+            if apply_low_pass:
+                x = low_pass_filter(x, cutoff_freq)
+                y = low_pass_filter(y, cutoff_freq)
+
+            # Set labels
+            XL = custom_labels.get('x', Ch_info[Ch_x][2][0]) if custom_labels else Ch_info[Ch_x][2][0]
+            YL = custom_labels.get('y', Ch_info[Ch_y][2][1]) if custom_labels else Ch_info[Ch_y][2][1]
+
+            # Prepare scatter trace
+            scatter_params = dict(
+                x=x,
+                y=y,
+                mode='lines',
+                name=f"Test Data",
+                hovertemplate=
+                    f"{Ch_info[Ch_x][0]} vs {Ch_info[Ch_y][0]}<br>" +
+                    f"X: %{{x:.2f}}<br>" +
+                    f"Y: %{{y:.2f}}<br>" +
+                    f"Time: %{{customdata:.2f}}<br>" +
+                    "<extra></extra>",
+                customdata=time_data  # Add time data to hover
+            )
+
+            v2s = (60*GR/(0.5*Wdia*3.6*2*np.pi))
+
+            goal_shift = dict(
+                x=np.array(veh_speed) *v2s,
+                y=engine_rpms,
+                mode='lines+markers',
+                name=f"New Model [{q,w,e,r,t}-{shim}]",
+            )
+
+            old_shift = dict(
+                x=np.array(old_veh)*v2s ,
+                y=old_rpm,
+                mode='lines+markers',
+                name=f"Old Model [{q,w,e,r,t}-{shim}]",
+            )
+
+
+            # Plotting Lines to compare against
+            Low = np.array([0, Vsmin])*v2s
+            High = np.array([0, Vsmax])*v2s
+            Govspeed = np.array([ErpmMax, ErpmMax])
+            Idle = np.array([ErpmMin, ErpmMin])
+            RPM = np.array([0, 3800])
+
+
+            # Add scatter traces
+            fig.add_trace(go.Scatter(**scatter_params))
+            fig.add_trace(go.Scatter(**old_shift))
+            fig.add_trace(go.Scatter(**goal_shift))
+
+
+
+            fig.add_trace(go.Scatter(
+                x=[0, Vsmin*v2s], y=RPM,
+                mode='lines', line=dict(dash='dash', color='grey'),
+                name='Low gear ratio',
+            ))
+            fig.add_trace(go.Scatter(
+                x=[Vsmin*v2s, Vsmax*v2s], y=RPM,
+                mode='lines', line=dict(dash='dash', color='grey'),
+                name='High gear ratio',
+            ))
+            fig.add_trace(go.Scatter(
+                x=[0, Vsmax*v2s], y=Govspeed,
+                mode='lines', line=dict(dash='dash', color='red'),
+                name='Governor',
+            ))
+            fig.add_trace(go.Scatter(
+                x=[0, Vsmax], y=Idle,
+                mode='lines', line=dict(dash='dash', color='grey'),
+                name='Idle',
+                xaxis = 'x2'
+            ))
+
+
+            factor = 1/v2s
+            # Update layout
+            fig.update_layout(
+                xaxis=dict(
+                    title='RPM',
+                    range=[0, 4500],  # Set to include your data range
+                    tick0=0,
+                    dtick=1000,  # Major ticks at 1000 increments
+                    gridcolor='lightgrey',
+                    showgrid=True
+                ),
+                xaxis2=dict(
+                    title='Vehicle Speed (km/h)',  # Adjust units as needed
+                    overlaying='x',  # Overlays the primary x-axis
+                    side='top',  # Position at the top
+                    range=[0, 4500 * factor],  # Scale range based on factor
+                    tick0=0,
+                    dtick= 1000 * factor,  # Match increments scaled by factor
+                    showgrid=False,  # Avoid clutter from secondary grid
+                    tickformat=".0f"
+                ),
+                dragmode='zoom',
+                xaxis_title="Secondary Speed [RPM]",
+                yaxis_title="Engine/Primary Speed [RPM]",
+                yaxis=dict(range=[1000, 4200]),
+                title=dict(text=subTitle, x=0.5,y=0.95, xanchor='center'),
+                showlegend=True,
+                hovermode='closest',
+                legend=dict(
+                    yanchor="bottom",
+                    y=-0.4,
+                    xanchor="center",
+                    x=0.5,
+                    orientation="h",
+                    traceorder="normal",
+                    font = dict(size=14)
+                ),
+            )
+            fig.update_xaxes(showgrid=True)
+            fig.update_yaxes(showgrid=True)
+
+
+            return mo.ui.plotly(fig)
+    return (plot_vs,)
+
+
+@app.cell
 def _(go, low_pass_filter, mo, pio, plotly, theme):
     def plot_data(x,y,section = [1,-1],
                   Title = "Custom Title",
@@ -713,143 +870,6 @@ def _():
 
         return channels
     return (read_txt,)
-
-
-@app.cell
-def _(e, go, low_pass_filter, mo, np, q, r, section, shim, t, w):
-    def plot_vs(data, Ch_info, Ch_x, Ch_y, veh_speed, engine_rpms, old_veh, old_rpm, calibrated_data=False, subTitle="Custom Subtitle", 
-                    custom_labels=None, apply_low_pass=False, cutoff_freq=60.0):
-
-            GR = 11.3  # Gear Reduction Ratio
-            CVTH = 0.76  # CVT High Ratio
-            CVTL = 3.8  # CVT Low Ratio
-            TRL = GR * CVTL  # Torque Ratio Low
-            TRH = GR * CVTH  # Torque Ratio High
-            ErpmMax = 3700  # Max engine RPM
-            ErpmMin = 1800  # Min engine RPM
-            Wdia = 23 * 0.0254  # wheel diameter in m
-            Wcirc = 1.74  # Wdia * np.pi ### needs calibration
-            Vsmax = 3800 / TRH / 60 * Wcirc * 3.6  # Max vehicle speed in km/h
-            Vsmin = 3800 / TRL / 60 * Wcirc * 3.6  # Min vehicle speed in km/h
-
-            # Create Plotly figure
-            fig = go.Figure()
-
-            # Extract data
-            x = data[Ch_x].Data[section[0]:section[1]]
-            y = data[Ch_y].Data[section[0]:section[1]]
-
-            # Extract time data
-            time_data = data[Ch_x].time[section[0]:section[1]]
-
-            # Transform Data using Calibration Values
-            if calibrated_data:
-                x = apply_calibration(x, Ch_info[Ch_x][1])
-                y = apply_calibration(y, Ch_info[Ch_y][1])
-
-            # Apply Low-Pass Filter
-            if apply_low_pass:
-                x = low_pass_filter(x, cutoff_freq)
-                y = low_pass_filter(y, cutoff_freq)
-
-            # Set labels
-            XL = custom_labels.get('x', Ch_info[Ch_x][2][0]) if custom_labels else Ch_info[Ch_x][2][0]
-            YL = custom_labels.get('y', Ch_info[Ch_y][2][1]) if custom_labels else Ch_info[Ch_y][2][1]
-
-            # Prepare scatter trace
-            scatter_params = dict(
-                x=x,
-                y=y,
-                mode='lines',
-                name=f"Test Data",
-                hovertemplate=
-                    f"{Ch_info[Ch_x][0]} vs {Ch_info[Ch_y][0]}<br>" +
-                    f"X: %{{x:.2f}}<br>" +
-                    f"Y: %{{y:.2f}}<br>" +
-                    f"Time: %{{customdata:.2f}}<br>" +
-                    "<extra></extra>",
-                customdata=time_data  # Add time data to hover
-            )
-
-            v2s = (60*GR/(0.5*Wdia*3.6*2*np.pi))
-
-            goal_shift = dict(
-                x=np.array(veh_speed) *v2s,
-                y=engine_rpms,
-                mode='lines+markers',
-                name=f"New Model [{q,w,e,r,t}-{shim}]",
-            )
-
-            old_shift = dict(
-                x=np.array(old_veh)*v2s ,
-                y=old_rpm,
-                mode='lines+markers',
-                name=f"Old Model [{q,w,e,r,t}-{shim}]",
-            )
-
-
-            # Plotting Lines to compare against
-            Low = np.array([0, Vsmin])*v2s
-            High = np.array([0, Vsmax])*v2s
-            Govspeed = np.array([ErpmMax, ErpmMax])
-            Idle = np.array([ErpmMin, ErpmMin])
-            RPM = np.array([0, 3800])
-
-
-            # Add scatter traces
-            fig.add_trace(go.Scatter(**scatter_params))
-            fig.add_trace(go.Scatter(**old_shift))
-            fig.add_trace(go.Scatter(**goal_shift))
-
-
-
-            fig.add_trace(go.Scatter(
-                x=[0, Vsmin*v2s], y=RPM,
-                mode='lines', line=dict(dash='dash', color='grey'),
-                name='Low gear ratio',
-            ))
-            fig.add_trace(go.Scatter(
-                x=[Vsmin*v2s, Vsmax*v2s], y=RPM,
-                mode='lines', line=dict(dash='dash', color='grey'),
-                name='High gear ratio',
-            ))
-            fig.add_trace(go.Scatter(
-                x=[0, Vsmax*v2s], y=Govspeed,
-                mode='lines', line=dict(dash='dash', color='red'),
-                name='Governor',
-            ))
-            fig.add_trace(go.Scatter(
-                x=[0, Vsmax*v2s], y=Idle,
-                mode='lines', line=dict(dash='dash', color='grey'),
-                name='Idle',
-            ))
-
-
-
-            # Update layout
-            fig.update_layout(
-                dragmode='zoom',
-                xaxis_title="Secondary Speed [RPM]",
-                yaxis_title="Engine/Primary Speed [RPM]",
-                yaxis=dict(range=[1000, 4500]),
-                title=dict(text=subTitle, x=0.5, xanchor='center'),
-                showlegend=True,
-                hovermode='closest',
-                legend=dict(
-                    yanchor="bottom",
-                    y=-0.4,
-                    xanchor="center",
-                    x=0.5,
-                    orientation="h",
-                    traceorder="normal",
-                ),
-            )
-            fig.update_xaxes(showgrid=True)
-            fig.update_yaxes(showgrid=True)
-
-
-            return mo.ui.plotly(fig)
-    return (plot_vs,)
 
 
 @app.cell
