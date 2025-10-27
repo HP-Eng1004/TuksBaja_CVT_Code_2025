@@ -401,3 +401,84 @@ def plot_cvt_error_convergence(simulation_data):
     fig.update_yaxes(title_text="Force Error (%)", row=1, col=2)
 
     return fig
+
+def plot_exhaustive_search(results, goal, Vsmin, Vsmax, ErpmMax, ErpmMin):
+    fig = go.Figure()
+    Low = [0, Vsmin]
+    High = [0, Vsmax]
+    PeakP = [goal, goal]
+    Govspeed = [ErpmMax, ErpmMax]
+    Idle = [ErpmMin, ErpmMin]
+    RPM = [0, ErpmMax]
+    dash = "dash"
+
+    fig.add_trace(go.Scatter(
+        x=[0, Vsmin], y=RPM,
+        mode='lines', line=dict(dash='dash', color='grey'),
+        name='Low gear ratio',
+        hovertemplate='name'
+    ))
+    fig.add_trace(go.Scatter(
+        x=[Vsmin, Vsmax], y=RPM,
+        mode='lines', line=dict(dash='dash', color='grey'),
+        name='High gear ratio',
+        hovertemplate='name'
+    ))
+    fig.add_trace(go.Scatter(
+        x=[0, Vsmax], y=PeakP,
+        mode='lines', line=dict(dash='dash', color='green'),
+        name='Ideal shift',
+        hovertemplate='name'
+    ))
+    fig.add_trace(go.Scatter(
+        x=[0, Vsmax], y=Govspeed,
+        mode='lines', line=dict(dash='dash', color='red'),
+        name='Governor',
+        hovertemplate='name'
+    ))
+    fig.add_trace(go.Scatter(
+        x=[0, Vsmax], y=Idle,
+        mode='lines', line=dict(dash='dash', color='grey'),
+        name='Idle',
+        hovertemplate='name'
+    ))
+
+    for result in results:
+        lame = str(result['params'])
+        if result['slip'] == 1:
+            lame += " - SLIP"
+            fig.add_trace(go.Scatter(
+                x=result['veh_speed'], y=result['engine_rpms'],
+                name=lame, hoverinfo='name', line=dict(dash=dash)
+            ))
+        else:
+            fig.add_trace(go.Scatter(
+                x=result['veh_speed'], y=result['engine_rpms'],
+                name=lame, hoverinfo='name'
+            ))
+
+    fig.update_layout(
+        template="plotly_white",
+        title=dict(text="Engine RPM along Vehicle Speed (All Setups)", x=0.5, xanchor='center'),
+        xaxis_title="Vehicle Speed in km/h",
+        yaxis_title="Engine Speed in RPM",
+        yaxis=dict(range=[1000, 4500]),
+        showlegend=True,
+        legend=dict(
+            yanchor="bottom",
+            y=-0.4,
+            xanchor="center",
+            x=0.5,
+            orientation="h",
+            traceorder="normal",
+            itemsizing="constant",
+            font=dict(size=8)
+        ),
+        margin=dict(b=150),
+        hovermode='closest',
+        width=1000,
+        height=600
+    )
+    fig.update_xaxes(showgrid=True)
+    fig.update_yaxes(showgrid=True)
+    return fig

@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.14.16"
+__generated_with = "0.16.3"
 app = marimo.App(width="medium")
 
 
@@ -10,7 +10,7 @@ def _():
     import numpy as np
     import plotly.graph_objs as go
     from CVT_Model_2025 import cvt_simulation
-    from CVT_Plotting_2025 import plot_exhaustive_search, plot_torque_transfer, plot_force_balance, plot_slip_risk, plot_rpm_surface, plot_engagement_rpms
+    from CVT_Plotting_2025 import plot_torque_transfer, plot_force_balance, plot_slip_risk, plot_rpm_surface, plot_engagement_rpms, plot_exhaustive_search
     return (
         cvt_simulation,
         mo,
@@ -28,14 +28,14 @@ def _():
 def _(mo):
     mo.md(
         r"""
-        ## Modified Mills' (2019) Algorithm
-        ### With parts from Mulambu (2021)
-        Initial Shifting Stages
-        #### JL (Hannes) Pretorius - (2025)
-        - Fixed the relation for the pulley diameters
-        - Changed equation for $\omega_1$ (Engine Speed) to include centrifugal forces
-        - Add an updated way to predict if the belt will slip
-        """
+    ## Modified Mills' (2019) Algorithm
+    ### With parts from Mulambu (2021)
+    Initial Shifting Stages
+    #### JL (Hannes) Pretorius - (2025)
+    - Fixed the relation for the pulley diameters
+    - Changed equation for $\omega_1$ (Engine Speed) to include centrifugal forces
+    - Add an updated way to predict if the belt will slip
+    """
     )
     return
 
@@ -102,7 +102,7 @@ def _(
             for e in range(10):
                 for r in range(5):
                     for t in range(3):
-                        result = cvt_simulation(q, w, e, r, t, goal=goal, shim=0, plot=False, no_T2=False)
+                        result = cvt_simulation(q, w, e, r, t, goal=goal, shim=0, no_T2=False)
                         engine_rpms = np.array(result['engine_rpms'])
                         veh_speed = result['veh_speed']
                         slip = result['slip']
@@ -138,8 +138,9 @@ def _(
     # Generate plots using stored results
     fig_exhaustive = plot_exhaustive_search(results, goal, Vsmin, Vsmax, ErpmMax, ErpmMin)
     fig_torque = None
+    shim = 0
     if results:
-        fig_torque = plot_torque_transfer(results[0], *results[0]['params'])
+        fig_torque = plot_torque_transfer(results[0],shim, *results[0]['params'])
     q_range, w_range = range(9), range(7)
     fig_force = plot_force_balance(results, q_range, w_range)
     fig_slip = plot_slip_risk(results, goal, tolerance)

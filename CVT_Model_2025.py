@@ -197,7 +197,7 @@ def _(
 ):
     # Display plots and simulation results
     info = True
-    vert = True
+    vert = False
     # Generate plots
     plots = plot_simulation(
         result,
@@ -214,7 +214,9 @@ def _(
         ErpmMin=ErpmMin
     )
 
-    if info == True & vert == False:
+
+    if info == True and vert == False:
+        print("Hallo World")
         mo.output.append(
             mo.vstack([
                 mo.hstack([
@@ -241,7 +243,8 @@ def _(
 
 
                    ],widths=[4,1])]))
-    if info == True & vert == True:
+
+    if info == True and vert == True:
         mo.output.append(
             mo.vstack([
                 mo.ui.plotly(plots['main_plot']),
@@ -520,7 +523,8 @@ def cvt_simulation(q=7, w=3, e=8, r=1, t=1, goal=3400, shim=0, no_T2=False):
             T1_guess = T1_new
             iter_count += 1
 
-        print(f"shift: {y}, took {iter_count} iterations")
+        # print(f"shift: {y}, took {iter_count} iterations")
+
         # Append error histories for this shift point
         T_err_history.append(T_err_iter)
         F2_err_history.append(F2_err_iter)
@@ -1011,7 +1015,7 @@ def _(ErpmMax, ErpmMin, GR, Vsmax, Vsmin, Wdia, e, mo, q, r, t, w):
             orientation="h",
             traceorder="normal",
             itemsizing="constant",
-            font=dict(size=10)
+            font=dict(size=14)
         ),
     )
     fig.update_xaxes(showgrid=True)

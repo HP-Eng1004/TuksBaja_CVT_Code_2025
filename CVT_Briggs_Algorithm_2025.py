@@ -17,12 +17,14 @@ with app.setup:
 
     from CVT_Model_2025 import pulley_diameters, wrap_angles, Fc,  maxT, percentError, engTorq
 
+    from CVT_Plotting_2025 import plot_torque_transfer, plot_error, plot_radial_force, plot_cvt_error_convergence
+
 
 @app.cell(hide_code=True)
 def _():
     mo.md(
         r"""
-    # Investigate a setup (For Briggs & Straton Engine)
+    # Investigate a setup (For Briggs & Stratton Engine)
     #### Use the shorthand developed by Mills (2019)
     """
     )
@@ -30,16 +32,21 @@ def _():
 
 
 @app.cell(hide_code=True)
-def _(T, es, qs, rs, ss, ts, ws):
+def _(T_start, mu_d):
+    mo.hstack([T_start,T_start.value,"[Nm] ; ", mu_d,mu_d.value], justify="start")
+    return
+
+
+@app.cell(hide_code=True)
+def _(es, qs, rs, ss, ts, ws):
     mo.vstack([
-        mo.hstack([T,T.value,"%",f"({round(T.value*0.17,1)} [Nm]"], justify="start"),
         mo.hstack([qs,qs.value,";",ws,ws.value,";",ss,ss.value,"[mm]"], justify="start"),
         mo.hstack([es,es.value,";",rs,rs.value,";",ts,ts.value], justify="start")])
     return
 
 
 @app.cell(hide_code=True)
-def _(es, qs, rs, ss, ts, ws):
+def _(T_start, es, mu_d, qs, rs, ss, ts, ws):
     # Get values from sliders below
     q = qs.value # Flyweights
     w = ws.value # Primary spring
@@ -48,14 +55,30 @@ def _(es, qs, rs, ss, ts, ws):
     e = es.value # Ramp angle
     r = rs.value # Secondary Pretension
     t = ts.value # Secondary Spring
-    return e, q, r, shim, t, w
+
+
+    cf_dyn = mu_d.value #Dynamic Coeff. of Friction
+    T_takeoff = T_start.value # Takeoff Torque
+    return T_takeoff, cf_dyn, e, q, r, shim, t, w
 
 
 @app.cell
-def _(T, e, q, r, shim, t, w):
-    result = cvt_simulation_briggs(q, w, e, r, t, shim =shim, plot=True, no_T2 = False, goal = 3600,TorqPerc=T.value)
+def _(T, T_takeoff, cf_dyn, e, q, r, shim, t, w):
+    result = cvt_simulation_briggs(q, w, e, r, t, shim =shim, plot=True, goal = 3600,TorqPerc=T.value, cf_dyn = cf_dyn, T_takeoff = T_takeoff)
     print(result['veh_speed'])
     print(result['engine_rpms'])
+    return (result,)
+
+
+@app.cell
+def _(e, q, r, result, shim, t, w):
+    plot_radial_force(result, q, w, e, r, t, shim)
+    return
+
+
+@app.cell
+def _(e, q, r, result, shim, t, w):
+    plot_torque_transfer(result, q, w, e, r, t, shim)
     return
 
 
@@ -84,7 +107,19 @@ def _():
 
 
 @app.cell
-def _(ErpmMax, Govspeed, Idle, T, Vsmax, Vsmin, go, goal, list):
+def _(
+    ErpmMax,
+    Govspeed,
+    Idle,
+    T,
+    T_takeoff,
+    Vsmax,
+    Vsmin,
+    cf_dyn,
+    go,
+    goal,
+    list,
+):
     _fig = go.Figure()
         # Plotting Lines to compare against
     _fig.add_trace(go.Scatter(
@@ -116,7 +151,7 @@ def _(ErpmMax, Govspeed, Idle, T, Vsmax, Vsmin, go, goal, list):
         _r=setup[3]
         _t=setup[4]
         _shim=setup[5]
-        _result = cvt_simulation_briggs(_q, _w, _e, _r, _t, shim =_shim, plot=False, no_T2 = False, goal = 3600,TorqPerc=T.value) 
+        _result = cvt_simulation_briggs(_q, _w, _e, _r, _t, shim =_shim, plot=False, goal = 3600,TorqPerc=T.value, cf_dyn = cf_dyn, T_takeoff = T_takeoff) 
 
         # Label for the last trace
         _lame = str([_q, _w, _e, _r, _t]) + '-'+ str(_shim)
@@ -179,7 +214,7 @@ def engTorqBS(w):
 
 
 @app.function
-def cvt_simulation_briggs(q=4, w=2, e=7, r=1, t=1, goal= 3400, shim=0, plot=False, no_T2 = False, TorqPerc = 100):
+def cvt_simulation_briggs(q=4, w=2, e=7, r=1, t=1, shim=0, goal= 3400, plot=False, TorqPerc = 100, cf_dyn = 0.25, T_takeoff = 17.4):
     """
     Simulate CVT based on parameters.
 
@@ -328,8 +363,10 @@ def cvt_simulation_briggs(q=4, w=2, e=7, r=1, t=1, goal= 3400, shim=0, plot=Fals
             TRY: From Aaen, not all torque from engine needs to be transmitted to get the vehicle moving
             ====> Calculate the takeoff torque or use Wheel Force Transducer data to estimate
             """
-            cf_dyn = 0.25 * cf
-            T_takeoff = 7.6 # Rough values from WFT
+            #Use function inputs for more control
+            # cf_dyn = 0.25 * cf 
+            # T_takeoff = 7.6 # Rough values from WFT
+
             w_eng = (((T_takeoff*tan(beta) / (r1 * cf_dyn)) + feng) / (MFW * rsint))**0.5
             rpm_eng = (60 / (2 * pi)) * w_eng
             engine_rpms.append(rpm_eng)
@@ -339,6 +376,7 @@ def cvt_simulation_briggs(q=4, w=2, e=7, r=1, t=1, goal= 3400, shim=0, plot=Fals
             """Use the engagement rpm just solved for to guess clutching engine and evalute the engine torque at that point
             """
             T1_clu = engTorq(w_eng)
+            print(T1_clu)
 
             w_clu = (((T1_clu * tan(beta) / (r1 * cf)) + feng) / ((MFW * rsint) - (m_prime * tan(beta) * phi_1 * r1**2)))**0.5
             rpm_clu = (60 / (2 * pi)) * w_clu
@@ -552,23 +590,30 @@ def cvt_simulation_briggs(q=4, w=2, e=7, r=1, t=1, goal= 3400, shim=0, plot=Fals
 
                    ],justify="start")]))
 
-    if plot == True:
-        return {
+    return {
             'veh_speed': veh_speed,
             'engine_rpms': engine_rpms,
             'slip': slip,
             'ys': ys,
-            "rad_plot": fig_rad,
-            "err_plot": fig_err,
+            'F1_plt': F1_plt,
+            'F2_plt': F2_plt,
+            'Fc1_plt': Fc1_plt,
+            'Fc2_plt': Fc2_plt,
+            'Rs1_plt': Rs1_plt,
+            'Rs2_plt': Rs2_plt,
+            'R1_plt': R1_plt,
+            'R2_plt': R2_plt,
+            'T1_plt': T1_plt,
+            'T2_plt': T2_plt,
+            'Terr_plt': Terr_plt,
+            'F2_err_plt': F2_err_plt,
+            'Tmax1_plt': Tmax1_plt,
+            'Tmax2_plt': Tmax2_plt,
+
+            'Idle_rpm':rpm_idle_max,
+            'Engage_rpm':rpm_eng,
+            'Clutch_rpm':rpm_clu,
         }
-    else:
-        return {
-            'veh_speed': veh_speed,
-            'engine_rpms': engine_rpms,
-            'slip': slip,
-            'ys': ys,        
-        # Add other lists if needed, e.g., 'F1_plt': F1_plt, etc.
-    }
 
 
 @app.cell(hide_code=True)
@@ -1056,6 +1101,13 @@ def _(e, q, r, t, w):
 
 @app.cell
 def _():
+    x = np.linspace(0.1,1)
+    plt.plot(x,1/x)
+    return
+
+
+@app.cell
+def _():
     # Define the sliders for above
     qs = mo.ui.slider(
         start=0, 
@@ -1112,7 +1164,23 @@ def _():
         value=100, 
         label="Torque Percentage (of 17Nm)"
     )
-    return T, es, qs, rs, ss, ts, ws
+
+    mu_d =  mo.ui.slider(
+        start=0, 
+        stop=1, 
+        step=0.05, 
+        value=0.2, 
+        label="Dynamic Coeff. of Friction"
+    )
+
+    T_start =  mo.ui.slider(
+        start=0, 
+        stop=25, 
+        step=1, 
+        value=17.4, 
+        label="Take-off Torque [Nm]"
+    )
+    return T, T_start, es, mu_d, qs, rs, ss, ts, ws
 
 
 @app.cell
