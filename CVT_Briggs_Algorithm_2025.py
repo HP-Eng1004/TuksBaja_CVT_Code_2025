@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.16.3"
+__generated_with = "0.17.7"
 app = marimo.App(width="medium")
 
 with app.setup:
@@ -22,12 +22,10 @@ with app.setup:
 
 @app.cell(hide_code=True)
 def _():
-    mo.md(
-        r"""
+    mo.md(r"""
     # Investigate a setup (For Briggs & Stratton Engine)
     #### Use the shorthand developed by Mills (2019)
-    """
-    )
+    """)
     return
 
 
@@ -84,7 +82,9 @@ def _(e, q, r, result, shim, t, w):
 
 @app.cell(hide_code=True)
 def _():
-    mo.md(r"""# Compare Setups""")
+    mo.md(r"""
+    # Compare Setups
+    """)
     return
 
 
@@ -96,8 +96,8 @@ def _():
                      #[5, 2, 7, 1, 1,10], 
                      # [7, 1, 6, 0, 0, 5], 
                      # [6, 1, 9, 0, 0, 5],
-                     [2, 2, 9, 0, 0, 0],
-                     [8, 0, 9, 0, 1, 10],
+                     # [2, 2, 9, 0, 0, 0],
+                     # [8, 0, 9, 0, 1, 10],
                      [7, 3, 8, 0, 0, 0], #Tested
                      [6, 2, 5, 0, 1, 10] #Tested
 
@@ -195,12 +195,10 @@ def _(
 
 @app.cell
 def _():
-    mo.md(
-        r"""
-    ##Function Definitions 
+    mo.md(r"""
+    ##Function Definitions
     Briggs Math Model
-    """
-    )
+    """)
     return
 
 
@@ -371,6 +369,34 @@ def cvt_simulation_briggs(q=4, w=2, e=7, r=1, t=1, shim=0, goal= 3400, plot=Fals
             rpm_eng = (60 / (2 * pi)) * w_eng
             engine_rpms.append(rpm_eng)
             veh_speed.append(0)
+
+            # mus = np.linspace(0.15,0.75)
+            # mrpm = []
+            # for i in mus:
+            #     w_eng_mu = (((T_takeoff*tan(beta) / (r1 * i)) + feng) / (MFW * rsint))**0.5
+            #     rpm_eng_mu = (60 / (2 * pi)) * w_eng_mu
+            #     mrpm.append(rpm_eng_mu)
+
+            # plt.figure(figsize=(8, 4))
+            # plt.title("Engagement RPM vs Friction Coeff.")
+            # plt.xlabel("Friction Coeff.")
+            # plt.ylabel("Engagement RPM")
+            # plt.plot(mus,mrpm)
+            # plt.show()
+
+            # Ts = np.linspace(10,20)
+            # Trpm = []
+            # for i in Ts:
+            #     w_eng_T = (((i*tan(beta) / (r1 * cf_dyn)) + feng) / (MFW * rsint))**0.5
+            #     rpm_eng_T = (60 / (2 * pi)) * w_eng_T
+            #     Trpm.append(rpm_eng_T)
+
+            # fig_rad, ax_rad = plt.subplots(figsize=(8, 6))
+            # plt.title("Engagement RPM vs Required Torque")
+            # plt.xlabel("Required Torque")
+            # plt.ylabel("Engagement RPM")
+            # plt.plot(Ts,Trpm)
+            # plt.show()
 
             # Clutching
             """Use the engagement rpm just solved for to guess clutching engine and evalute the engine torque at that point
@@ -618,7 +644,9 @@ def cvt_simulation_briggs(q=4, w=2, e=7, r=1, t=1, shim=0, goal= 3400, plot=Fals
 
 @app.cell(hide_code=True)
 def _():
-    mo.md(r"""# Old Model Comparisons""")
+    mo.md(r"""
+    # Old Model Comparisons
+    """)
     return
 
 
@@ -1017,7 +1045,7 @@ def _(e, q, r, t, w):
         y=old_y,
         mode='lines+markers',
         line=dict(color=colors[7]),
-        name=f"Old Model [{q,w,e,r,t}]",
+        name=f"Old Model [{q,w,e,r,t}-00]",
     )
 
     old_shift_fix = dict(
@@ -1025,7 +1053,7 @@ def _(e, q, r, t, w):
         y=old_y_fix,
         mode='lines+markers',
         line=dict(dash='dash',color=colors[6]),
-        name=f"Old Model Diameter Fix [{q,w,e,r,t}]",
+        name=f"Old Model Diameter Fix [{q,w,e,r,t}-00]",
     )
 
     goal_shift = dict(
@@ -1033,7 +1061,7 @@ def _(e, q, r, t, w):
             y=goal_y,
             mode='lines+markers',
             line=dict(color=colors[5]),
-            name=f"New Model [{q,w,e,r,t}]",
+            name=f"New Model [{q,w,e,r,t}-00]",
         )
 
 
@@ -1089,11 +1117,13 @@ def _(e, q, r, t, w):
             orientation="h",
             traceorder="normal",
             itemsizing="constant",
-            font=dict(size=10)
+            font=dict(size=12)
         ),
     )
     _fig.update_xaxes(showgrid=True)
     _fig.update_yaxes(showgrid=True)
+
+    pio.write_image(_fig, f'Model Comparison [{q,w,e,r,t}-00].svg', scale=1, width=1080, height=540)
 
     mo.ui.plotly(_fig)
     return ErpmMax, Govspeed, Idle, Vsmax, Vsmin, go
@@ -1101,8 +1131,6 @@ def _(e, q, r, t, w):
 
 @app.cell
 def _():
-    x = np.linspace(0.1,1)
-    plt.plot(x,1/x)
     return
 
 
@@ -1169,7 +1197,7 @@ def _():
         start=0, 
         stop=1, 
         step=0.05, 
-        value=0.2, 
+        value=0.3, 
         label="Dynamic Coeff. of Friction"
     )
 

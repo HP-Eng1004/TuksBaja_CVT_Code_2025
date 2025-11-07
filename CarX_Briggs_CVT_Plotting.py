@@ -342,13 +342,15 @@ def _(
     cutoff_slider,
     filter_button,
     mo,
+    pio,
     plot_multi,
     section,
+    setup_values,
     show_unfiltered_but,
 ):
     # Plot selected channels
     if Data is not None:
-        _fig = plot_multi(
+        fig_data = plot_multi(
             data=Data,
             section = section,
             Ch_info=Channel_Info,
@@ -361,7 +363,8 @@ def _(
             show_unfiltered = show_unfiltered_but.value
         )
 
-        mo.output.append(_fig)
+        mo.output.append(fig_data)
+        pio.write_image(fig_data, f'RPM Data [{setup_values}].svg', scale=1, width=1080, height=540)
     return
 
 
@@ -385,12 +388,14 @@ def _(
     filter_button,
     goal_x,
     goal_y,
+    mo,
     old_x,
     old_y,
+    pio,
     plot_vs,
     setup_values,
 ):
-    plot_vs(
+    fig = plot_vs(
         data=Data,
         Ch_info=Channel_Info,
         Ch_x=3,
@@ -404,6 +409,9 @@ def _(
         custom_labels={'x': 'Secondary [RPM]', 'y': 'Engine [RPM'},
         apply_low_pass=filter_button.value,
         cutoff_freq=cutoff_slider.value,)
+
+    pio.write_image(fig, f'Shifting Curve [{setup_values}].svg', scale=1, width=1080, height=540)
+    mo.ui.plotly(fig)
     return
 
 
@@ -551,7 +559,17 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(Channel_Info, cvt_simulation_briggs, go, low_pass_filter, np, read_txt):
+def _(
+    Channel_Info,
+    cvt_simulation_briggs,
+    go,
+    low_pass_filter,
+    mo,
+    np,
+    pio,
+    read_txt,
+    setup_values,
+):
     # Setup 1
     file1 = "C:\\Users\\hanne\\OneDrive - University of Pretoria\\Desktop\\DAQ Files\\73800-00\\04 Okt 2025\\T3 op &af.txt"
     data1 = read_txt(file1)
@@ -606,6 +624,7 @@ def _(Channel_Info, cvt_simulation_briggs, go, low_pass_filter, np, read_txt):
         x=x1,
         y=y1,
         mode='lines',
+        # line=dict(color='blue'),
         name=f"Test Data 73800-00",
 
     )
@@ -615,7 +634,8 @@ def _(Channel_Info, cvt_simulation_briggs, go, low_pass_filter, np, read_txt):
         x=np.array(goal_x1) *v2s,
         y=goal_y1,
         mode='lines+markers',
-        line=dict(dash='dash', color='blue'),
+        marker=dict(size=10,symbol="triangle-up"),
+        line=dict(width = 3, dash='dash', color='aqua'),
         name=f"Model [73800-00]",
     )
     _fig.add_trace(go.Scatter(**goal_shift1))
@@ -635,6 +655,7 @@ def _(Channel_Info, cvt_simulation_briggs, go, low_pass_filter, np, read_txt):
         x=x2,
         y=y2,
         mode='lines',
+        # line=dict(color='limegreen'),
         name=f"Test Data 62501-10",
 
     )
@@ -649,7 +670,9 @@ def _(Channel_Info, cvt_simulation_briggs, go, low_pass_filter, np, read_txt):
         x=np.array(goal_x2) *v2s,
         y=goal_y2,
         mode='lines+markers',
-        line=dict(dash='dash', color='green'),
+        marker=dict(size=10,symbol="square"),
+
+        line=dict(width = 3, dash='dash', color='lawngreen'),
         name=f"Model [62501-10]",
     )
     _fig.add_trace(go.Scatter(**goal_shift2))
@@ -732,6 +755,10 @@ def _(Channel_Info, cvt_simulation_briggs, go, low_pass_filter, np, read_txt):
     )
     _fig.update_xaxes(showgrid=True)
     _fig.update_yaxes(showgrid=True)
+
+    pio.write_image(_fig, f'Data Comparison [{setup_values}].svg', scale=1, width=1080, height=540)
+
+    mo.ui.plotly(_fig)
     return (
         Ch_info,
         Ch_x,
@@ -743,8 +770,6 @@ def _(Channel_Info, cvt_simulation_briggs, go, low_pass_filter, np, read_txt):
         Vsmin,
         cutoff_freq,
         factor,
-        file2,
-        result2,
         v2s,
     )
 
@@ -764,8 +789,11 @@ def _(
     factor,
     go,
     low_pass_filter,
+    mo,
     np,
+    pio,
     read_txt,
+    setup_values,
     v2s,
 ):
     # Slow Accel 73800-00
@@ -798,7 +826,7 @@ def _(
         x=x3,
         y=y3,
         mode='lines',
-        name=f"Test Data 73800-00",
+        name=f"Fast Acceleration Test Data",
 
     )
     _fig.add_trace(go.Scatter(**scatter3))
@@ -808,7 +836,7 @@ def _(
         y=goal_y3_1,
         mode='lines+markers',
         line=dict(dash='dash', color='blue'),
-        name=f"Model [73800-00] ; cf_dyn = 0.3",
+        name=f"Model ; cf_dyn = 0.3",
     )
     _fig.add_trace(go.Scatter(**goal_shift3_1))
 
@@ -817,7 +845,7 @@ def _(
         y=goal_y3_2,
         mode='lines+markers',
         line=dict(dash='dashdot', color='#1F77B4'),
-        name=r"Model [73800-00] ; cf_dyn = 0.65",
+        name=r"Model ; cf_dyn = 0.65",
     )
     _fig.add_trace(go.Scatter(**goal_shift3_2))
 
@@ -880,12 +908,16 @@ def _(
             x=0.5,
             orientation="h",
             traceorder="normal",
-            font = dict(size=16)
+            font = dict(size=14)
         ),
     )
     _fig.update_xaxes(showgrid=True)
     _fig.update_yaxes(showgrid=True)
-    return (goal_shift3_2,)
+
+    pio.write_image(_fig, f'Data Comparison [{setup_values}].svg', scale=1, width=1080, height=540)
+
+    mo.ui.plotly(_fig)
+    return goal_shift3_1, goal_x3_2, goal_y3_2, x3, y3
 
 
 @app.cell
@@ -899,64 +931,93 @@ def _(
     Vsmax,
     Vsmin,
     cutoff_freq,
-    cvt_simulation_briggs,
     factor,
-    file2,
     go,
-    goal_shift3_2,
+    goal_shift3_1,
+    goal_x3_2,
+    goal_y3_2,
     low_pass_filter,
+    mo,
     np,
+    pio,
+    plotly,
     read_txt,
-    result2,
+    setup_values,
     v2s,
+    x3,
+    y3,
 ):
+    file5 = "C:\\Users\\hanne\\OneDrive - University of Pretoria\\Desktop\\DAQ Files\\73800-00\\04 Okt 2025\\T3 op &af.txt"
+    data5 = read_txt(file5)
+    section5 = np.array([0,30])*1000
+    section6 = np.array([48,65])*1000
+
     # Create Plotly figure
     _fig = go.Figure()
 
-    # Setup 4
-    file4 = "C:\\Users\\hanne\\OneDrive - University of Pretoria\\Desktop\\DAQ Files\\62501-10\\62501-10 (4 Okt 2025).txt"
-    data4 = read_txt(file2)
-    section4 = np.array([0,35])*1000
-    result4 = cvt_simulation_briggs(6, 2, 5, 0, 1, shim = 10, cf_dyn = 0.3, T_takeoff = 17.4)
-    goal_x4 = result2['veh_speed']
-    goal_y4 = result2['engine_rpms']
+    # Extract data5
+    x5 = data5[Ch_x].Data[section5[0]:section5[1]]
+    y5 = data5[Ch_y].Data[section5[0]:section5[1]]
 
-    _fig.add_trace(go.Scatter(**goal_shift3_2))
+    x5 = apply_calibration(x5, Ch_info[Ch_x][1])
+    y5 = apply_calibration(y5, Ch_info[Ch_y][1])
 
-    # Extract data2
-    x4 = data4[Ch_x].Data[section4[0]:section4[1]]
-    y4 = data4[Ch_y].Data[section4[0]:section4[1]]
+    x5 = low_pass_filter(x5, cutoff_freq)
+    y5 = low_pass_filter(y5, cutoff_freq)
 
-    x4 = apply_calibration(x4, Ch_info[Ch_x][1])
-    y4 = apply_calibration(y4, Ch_info[Ch_y][1])
-
-    x4 = low_pass_filter(x4, cutoff_freq)
-    y4 = low_pass_filter(y4, cutoff_freq)
-
+    # Prepare scatter trace
     scatter4 = dict(
-        x=x4,
-        y=y4,
+        x=x3,
+        y=y3,
         mode='lines',
-        name=f"Test Data 62501-10",
+        # line=dict(color='limegreen'),
+        name=f"Slow Acceleration Test Data",
 
     )
 
-    _fig.add_trace(go.Scatter(**scatter4))
+    scatter5 = dict(
+        x=x5,
+        y=y5,
+        mode='lines',
+        name=f"Fast Acceleration Test Data",
 
-    # Model Plots
+    )
+
+    # Extract data6
+    x6 = data5[Ch_x].Data[section6[0]:section6[1]]
+    y6 = data5[Ch_y].Data[section6[0]:section6[1]]
+
+    x6 = apply_calibration(x6, Ch_info[Ch_x][1])
+    y6 = apply_calibration(y6, Ch_info[Ch_y][1])
+
+    x6 = low_pass_filter(x6, cutoff_freq)
+    y6 = low_pass_filter(y6, cutoff_freq)
+
+    # Prepare scatter trace
+    scatter6 = dict(
+        x=x6,
+        y=y6,
+        mode='lines',
+        name=f"Fast Acceleration Test Data Part 2",
+        showlegend=False,
+        line=dict(color=plotly.colors.qualitative.Plotly[0])
 
 
-    goal_shift4 = dict(
-        x=np.array(goal_x4) *v2s,
-        y=goal_y4,
+    )
+
+    _goal_shift3_2 = dict(
+        x=np.array(goal_x3_2) *v2s,
+        y=goal_y3_2,
         mode='lines+markers',
-        line=dict(dash='dash', color='green'),
-        name=f"Model [62501-10]",
+        line=dict(dash='dashdot', color='lawngreen'),
+        name=r"Model ; cf_dyn = 0.65",
     )
-    _fig.add_trace(go.Scatter(**goal_shift4))
 
-
-    # Add scatter traces
+    _fig.add_trace(go.Scatter(**scatter5))
+    _fig.add_trace(go.Scatter(**scatter6))
+    _fig.add_trace(go.Scatter(**scatter4))
+    _fig.add_trace(go.Scatter(**goal_shift3_1))
+    _fig.add_trace(go.Scatter(**_goal_shift3_2))
 
     _fig.add_trace(go.Scatter(
         x=[0, Vsmin*v2s], y=RPM,
@@ -979,7 +1040,6 @@ def _(
         name='Idle',
         xaxis = 'x2'
     ))
-
 
 
     # Update layout
@@ -1006,7 +1066,7 @@ def _(
         xaxis_title="Secondary Speed [RPM]",
         yaxis_title="Engine/Primary Speed [RPM]",
         yaxis=dict(range=[1000, 4200]),
-        title=dict(text="Experiment Comparison", x=0.5,y=0.95, xanchor='center'),
+        title=dict(text="Experiment Comparison V2", x=0.5,y=0.95, xanchor='center'),
         showlegend=True,
         hovermode='closest',
         legend=dict(
@@ -1016,16 +1076,19 @@ def _(
             x=0.5,
             orientation="h",
             traceorder="normal",
-            font = dict(size=16)
+            font = dict(size=14)
         ),
     )
     _fig.update_xaxes(showgrid=True)
     _fig.update_yaxes(showgrid=True)
+
+    pio.write_image(_fig, f'Data Comparison V2 [{setup_values}].svg', scale=1, width=1080, height=540)
+    mo.ui.plotly(_fig)
     return
 
 
 @app.cell
-def _(e, go, low_pass_filter, mo, np, q, r, section, shim, t, w):
+def _(e, go, low_pass_filter, np, q, r, section, shim, t, w):
     def plot_vs(data, Ch_info, Ch_x, Ch_y, veh_speed, engine_rpms, old_veh, old_rpm, calibrated_data=False, subTitle="Custom Subtitle", 
                     custom_labels=None, apply_low_pass=False, cutoff_freq=60.0):
 
@@ -1176,8 +1239,7 @@ def _(e, go, low_pass_filter, mo, np, q, r, section, shim, t, w):
             fig.update_xaxes(showgrid=True)
             fig.update_yaxes(showgrid=True)
 
-
-            return mo.ui.plotly(fig)
+            return fig
     return (plot_vs,)
 
 
@@ -1255,15 +1317,7 @@ def _(go, low_pass_filter, mo, pio, plotly, theme):
 
 
 @app.cell
-def _(
-    calculate_selection_average,
-    go,
-    low_pass_filter,
-    mo,
-    pio,
-    plotly,
-    theme,
-):
+def _(calculate_selection_average, go, low_pass_filter, pio, plotly, theme):
     # Plotting Functions
     def plot_multi(data, section, Ch_info, Ch_plot, calibrated_data=False, Title="Custom Title", custom_labels=None, apply_low_pass=False, cutoff_freq=60.0, show_unfiltered= False, saveFig=False, color_offset = 0):
 
@@ -1367,7 +1421,7 @@ def _(
         if saveFig:
             fig.write_image(title + '.png')
 
-        return mo.ui.plotly(fig)
+        return fig
     return (plot_multi,)
 
 

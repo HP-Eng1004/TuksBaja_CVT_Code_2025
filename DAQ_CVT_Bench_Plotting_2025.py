@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.16.3"
+__generated_with = "0.17.7"
 app = marimo.App(width="medium")
 
 
@@ -12,7 +12,9 @@ def _():
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(r"""# CVT Test Bench (Hannes 2025)""")
+    mo.md(r"""
+    # CVT Test Bench (Hannes 2025)
+    """)
     return
 
 
@@ -340,7 +342,9 @@ def _(
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(r"""### Plotting Speed vs Speed""")
+    mo.md(r"""
+    ### Plotting Speed vs Speed
+    """)
     return
 
 
@@ -360,7 +364,7 @@ def _(Channel_Info, Data, goal_x, goal_y, old_x, old_y, plot_vs, setup_values):
         custom_labels={'x': 'Secondary [RPM]', 'y': 'Engine [RPM'},
         apply_low_pass=False,
         cutoff_freq=60.0,
-        saveFig=False)
+        saveFig=True)
     return
 
 
@@ -923,6 +927,7 @@ def _(
     low_pass_filter,
     mo,
     np,
+    pio,
     plotly,
     q,
     r,
@@ -1097,7 +1102,8 @@ def _(
 
         # Save Figure
         if saveFig:
-            fig.write_image(f"{q,w,e,r,t}_ss" + '.png')
+            pio.write_image(fig, f'TB Shifting Curve [{q,w,e,r,t}-00].svg', scale=1, width=1080, height=540)
+
 
         return mo.ui.plotly(fig)
     return (plot_vs,)
@@ -1105,7 +1111,9 @@ def _(
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(r"""## Compare Diameter Fix""")
+    mo.md(r"""
+    ## Compare Diameter Fix
+    """)
     return
 
 

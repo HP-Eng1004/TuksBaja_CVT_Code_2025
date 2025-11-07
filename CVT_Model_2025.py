@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.16.3"
+__generated_with = "0.17.7"
 app = marimo.App(width="medium")
 
 with app.setup:
@@ -24,16 +24,14 @@ def _():
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(
-        r"""
+    mo.md(r"""
     # CVT Model Simulation
     ### Interactive Simulation with Sliders
     #### JL (Hannes) Pretorius - (2025)
     - Simulates CVT performance for given parameters
     - Includes sliders for interactive parameter adjustment
     - Plots Engine RPM vs. Vehicle Speed, Radial Forces, and Errors
-    """
-    )
+    """)
     return
 
 
@@ -46,9 +44,27 @@ def _(mo):
     t_slider = mo.ui.slider(start=0, stop=2, step=1, value=0,)
     goal_slider = mo.ui.slider(start=3000, stop=3800, step=50, value=3600)
     shim_slider = mo.ui.slider(start=0, stop=15, step=1, value=0)
+
+    mu_d =  mo.ui.slider(
+        start=0, 
+        stop=1, 
+        step=0.05, 
+        value=0.3, 
+        label="Dynamic Coeff. of Friction"
+    )
+
+    T_start =  mo.ui.slider(
+        start=0, 
+        stop=25, 
+        step=1, 
+        value=17.4, 
+        label="Take-off Torque [Nm]"
+    )
     return (
+        T_start,
         e_slider,
         goal_slider,
+        mu_d,
         q_slider,
         r_slider,
         shim_slider,
@@ -59,8 +75,10 @@ def _(mo):
 
 @app.cell
 def _(
+    T_start,
     e_slider,
     goal_slider,
+    mu_d,
     q_slider,
     r_slider,
     shim_slider,
@@ -89,6 +107,8 @@ def _(
         t=t_slider.value,
         goal=goal_slider.value,
         shim=shim_slider.value,
+        cf_dyn = mu_d.value, #Dynamic Coeff. of Friction
+        T_takeoff = T_start.value # Takeoff Torque
     )
 
     q=q_slider.value
@@ -97,6 +117,9 @@ def _(
     r=r_slider.value
     t=t_slider.value
     shim=shim_slider.value
+
+    cf_dyn = mu_d.value #Dynamic Coeff. of Friction
+    T_takeoff = T_start.value # Takeoff Torque
 
     # Part names
     FWn = FW_names()
@@ -137,9 +160,11 @@ def _(
 
 @app.cell(hide_code=True)
 def _(
+    T_start,
     e_slider,
     goal_slider,
     mo,
+    mu_d,
     q_slider,
     r_slider,
     shim_slider,
@@ -147,6 +172,7 @@ def _(
     w_slider,
 ):
     mo.vstack([
+        mo.hstack([T_start,T_start.value,"[Nm] ; ", mu_d,mu_d.value], justify="start"),
         mo.md(f"**Goal RPM**: {goal_slider.value} {goal_slider}"),
         mo.hstack([
             mo.md(f"**Flyweights**: {q_slider.value} {q_slider}"),
@@ -211,7 +237,7 @@ def _(
         Vsmin=Vsmin,
         Vsmax=Vsmax,
         ErpmMax=ErpmMax,
-        ErpmMin=ErpmMin
+        ErpmMin=ErpmMin,
     )
 
 
@@ -310,17 +336,15 @@ def _(result):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(
-        r"""
+    mo.md(r"""
     # Mathematical Model
     The function below defines al the different stages the shifting curve and calculate all the applicable parameters for plotting or further calculations
-    """
-    )
+    """)
     return
 
 
 @app.function
-def cvt_simulation(q=7, w=3, e=8, r=1, t=1, goal=3400, shim=0, no_T2=False):
+def cvt_simulation(q=7, w=3, e=8, r=1, t=1, goal=3400, shim=0, no_T2=False, cf_dyn = 0.3, T_takeoff = 17.4):
     """
     Simulate CVT based on parameters.
 
@@ -467,8 +491,6 @@ def cvt_simulation(q=7, w=3, e=8, r=1, t=1, goal=3400, shim=0, no_T2=False):
             TRY: From Aaen, not all torque from engine needs to be transmitted to get the vehicle moving
             ====> Calculate the takeoff torque or use Wheel Force Transducer data to estimate
             """
-            cf_dyn = 0.4 * cf #Guess
-            T_takeoff = 0.5 * T1 #Guess
 
             w_eng = (((T_takeoff * tan(beta) / (r1 * cf_dyn)) + feng) / (MFW * rsint))**0.5
             rpm_eng = (60 / (2 * pi)) * w_eng
@@ -724,19 +746,16 @@ def plot_simulation(result, q, w, e, r, t,shim, goal, Vsmin, Vsmax, ErpmMax, Erp
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(
-        r"""
+    mo.md(r"""
     # Other Functions
     Function used in the mathematical model
-    """
-    )
+    """)
     return
 
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(
-        r"""
+    mo.md(r"""
     ## Radial Force Model
     Developedby Hannes (JL) Pretorius (2025) to be able to convert the side force model into radial forces to be able to include Centrifugal Forces from the belt. It is also more intuitive to understand how the shifting happens with this model.
 
@@ -744,8 +763,7 @@ def _(mo):
     For a belt of wrap angle, $\phi$ and mass per meter of $m'$, the centripetal force, $F_c$ is given by
     $$F_c= m'\omega^2 r^2 \phi$$
     where $\omega$ is the angular velocity of the pulley and $r$ is the radius the belt wraps around.
-    """
-    )
+    """)
     return
 
 
@@ -756,8 +774,7 @@ def Fc(m,w,r,phi):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(
-        r"""
+    mo.md(r"""
     #### Wrap Angles
     The first step is to solve for the wrap angles on the pulleys
 
@@ -767,8 +784,7 @@ def _(mo):
     $$ϕ_d=π-2 sin^{-1}\frac{D-d}{2C}$$
     Large Pulley:
     $$ϕ_d=π+2 sin^{-1}\frac{D-d}{2C}$$
-    """
-    )
+    """)
     return
 
 
@@ -795,8 +811,7 @@ def wrap_angles(D1,D2,C=0.2667):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(
-        r"""
+    mo.md(r"""
     #### Diameters from Ratio (NB: Only for Algorithm)
     NB: Check what the actual belt length and centre distance is!
 
@@ -806,8 +821,7 @@ def _(mo):
     $$L=2C+\frac{\pi}{2}\cdot (D_1+D_2 )+(D_1-D_2 )^2/4C$$
     $$\Rightarrow L=2C+\frac{\pi}{2}\cdot (D_1+rD_1 )+(D_1-crD_1 )^2/4C$$
     $$\Rightarrow[(1-2cr+cr^2)/4C]\cdot D_1^2+[ \frac{\pi}{2}\cdot (1+cr)]\cdot D_1+[2C-L]=0$$
-    """
-    )
+    """)
     return
 
 
@@ -834,28 +848,26 @@ def pulley_diameters(ratio,C=0.266405,L=1.027):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(
-        r"""
+    mo.md(r"""
     #Belt Slipping / Max Transferable Torque
-    ##Transmittable Torque 
+    ##Transmittable Torque
 
     The maximum torque that can be transferred by the sheaves before the belt slips can be determined from
 
     $$T_{max}=F_{t1}-F_{t2}⋅r=Δ F_{t,max}⋅r$$
 
-    For this equation to be used, the belt tensions need to be determined independently of the transmitted torque. This can be done by relating the difference between the tensions, $\Delta F_t$ and the total frictional force around the wrap of the belt by 
+    For this equation to be used, the belt tensions need to be determined independently of the transmitted torque. This can be done by relating the difference between the tensions, $\Delta F_t$ and the total frictional force around the wrap of the belt by
 
     $$ΔF_{t,max}=μ N$$
 
-    where N is the total normal force the belt experiences from the pulley and can be defined by the radial force due to the side force, $R_s$ and the reduction of it by the centrifugal force, $F_c$ given resulting in 
+    where N is the total normal force the belt experiences from the pulley and can be defined by the radial force due to the side force, $R_s$ and the reduction of it by the centrifugal force, $F_c$ given resulting in
 
     $$\Delta F_{t,max} = \frac{\mu}{sin\beta} (R_s-F_c )=f' (R-F_c)$$
 
     That means that the max transmittable torque is
 
     $$T_{max}=f' (R_s-F_c )⋅r$$
-    """
-    )
+    """)
     return
 
 
@@ -867,8 +879,7 @@ def maxT (f,Rs,Fc,r):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(
-        r"""
+    mo.md(r"""
     ## Kohler/Rehlko Engine Torque Curve
 
     Below is the power and torque curve for the rule-compliant Rehlko/Kohler engine with the Baja SAE restrictor plate installed. It has been converted into metric units from the original that was provided by Baja SAE (2025)
@@ -876,8 +887,7 @@ def _(mo):
     It is then coded in a function to be used in the algorithm:
 
     $$ T_{engine} = -2\times 10^{-6} \cdot  rpm^2 + 0.0058\cdot rpm + 22.536 $$
-    """
-    )
+    """)
     return
 
 
@@ -891,7 +901,9 @@ def engTorq(w):
 
 @app.cell
 def _(mo):
-    mo.md(r"""## Misc. Usefull Functions""")
+    mo.md(r"""
+    ## Misc. Usefull Functions
+    """)
     return
 
 
@@ -902,7 +914,9 @@ def percentError(old, new):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(r"""# Old Model for Comparison""")
+    mo.md(r"""
+    # Old Model for Comparison
+    """)
     return
 
 
@@ -993,7 +1007,7 @@ def _(ErpmMax, ErpmMin, GR, Vsmax, Vsmin, Wdia, e, mo, q, r, t, w):
     ))
     # Add scatter trace
     fig.add_trace(go.Scatter(**old_shift))
-    fig.add_trace(go.Scatter(**old_shift_fix))
+    # fig.add_trace(go.Scatter(**old_shift_fix))
     fig.add_trace(go.Scatter(**goal_shift))
 
 
@@ -1021,6 +1035,7 @@ def _(ErpmMax, ErpmMin, GR, Vsmax, Vsmin, Wdia, e, mo, q, r, t, w):
     fig.update_xaxes(showgrid=True)
     fig.update_yaxes(showgrid=True)
 
+    pio.write_image(fig, f'Model Comparison [{q,w,e,r,t}].svg', scale=1, width=1080, height=540)
     mo.ui.plotly(fig)
     return
 
