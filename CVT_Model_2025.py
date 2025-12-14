@@ -1,7 +1,7 @@
 import marimo
 
 __generated_with = "0.17.7"
-app = marimo.App(width="medium")
+app = marimo.App(width="full")
 
 with app.setup:
     # Initialization code that runs before all other cells
@@ -223,7 +223,7 @@ def _(
 ):
     # Display plots and simulation results
     info = True
-    vert = False
+    vert = True
     # Generate plots
     plots = plot_simulation(
         result,
@@ -310,25 +310,25 @@ def _(
     return
 
 
-@app.cell
+@app.cell(disabled=True)
 def _(e, q, r, result, shim, t, w):
     plot_radial_force(result, q, w, e, r, t, shim)
     return
 
 
-@app.cell
+@app.cell(disabled=True)
 def _(e, q, r, result, shim, t, w):
     plot_torque_transfer(result, q, w, e, r, t, shim)
     return
 
 
-@app.cell
+@app.cell(disabled=True)
 def _(e, q, r, result, shim, t, w):
     plot_error(result, q, w, e, r, t,shim)
     return
 
 
-@app.cell
+@app.cell(disabled=True)
 def _(result):
     plot_cvt_error_convergence(result)
     return
@@ -920,7 +920,7 @@ def _(mo):
     return
 
 
-@app.cell
+@app.cell(disabled=True)
 def _(ErpmMax, ErpmMin, GR, Vsmax, Vsmin, Wdia, e, mo, q, r, t, w):
 
     import plotly.io as pio
